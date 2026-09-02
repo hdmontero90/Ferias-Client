@@ -1,0 +1,1 @@
+const REACT_APP_URL_APIGATEWAY = 'http://localhost:5000/'
