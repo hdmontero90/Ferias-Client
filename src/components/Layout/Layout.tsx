@@ -43,16 +43,18 @@ export function Layout() {
   const edicionEfectiva = edicion || edicionId;
 
   // NOW: obtener configuración del sitio público para esta edición
-  const configNavResult: any = useGetQuery("/api/publico/configuracion-sitio-publico/" + edicionEfectiva + "/nav") || {};
-  const configFooterResult: any = useGetQuery("/api/publico/configuracion-sitio-publico/" + edicionEfectiva + "/footer") || {};
+  const configNavResult: { nav_brand_image?: string; nav_links?: Array<{ titulo: string; url: string }> } =
+    useGetQuery("/api/publico/configuracion-sitio-publico/" + edicionEfectiva + "/nav")?.data ?? {};
+  const configFooterResult: { footer_logo_image?: string; footer_links?: Array<{ nombre: string; url: string; imagen?: string }> } =
+    useGetQuery("/api/publico/configuracion-sitio-publico/" + edicionEfectiva + "/footer")?.data ?? {};
 
   // NOW: memoizar los datos de configuración
   const navLinksOptions = useMemo(() => {
-    return configNavResult?.nav_links ?? [];
+    return configNavResult.nav_links ?? [];
   }, [configNavResult]);
 
   const footerLinksOptions = useMemo(() => {
-    return configFooterResult?.footer_links ?? [];
+    return configFooterResult.footer_links ?? [];
   }, [configFooterResult]);
 
   // NOW: memoizar los enlaces de navbar y footer a partir de la config o defaults
@@ -95,7 +97,7 @@ export function Layout() {
         </RouterLink>
       );
     });
-  }, [navLinks, edicionEfectiva, abierta, toggle]);
+  }, [navLinks, edicionEfectiva]);
 
   /** Navega a la misma sección pero en otra edición. */
   const alCambiarDeEdicion = (clave: string | null) => {
@@ -154,9 +156,9 @@ export function Layout() {
 
         <footer style={{ textAlign: "center", padding: "1.5rem", color: "#868e96" }}>
           <div>
-            {footerLogoImage ? (
+            {configFooterResult.footer_logo_image ? (
               <img
-                src={footerLogoImage}
+                src={configFooterResult.footer_logo_image}
                 alt="Footer logo"
                 style={{ maxWidth: 200, height: "auto", display: "block", margin: "0 auto" }}
               />
