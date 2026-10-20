@@ -1,14 +1,14 @@
-import { Loader, Center } from "@mantine/core";
+import { Center, Loader } from "@mantine/core";
 
+/** Spinner a pantalla completa mientras carga contenido. */
 export function Spinner() {
   return (
-    <Center style={{ 
-      height: "100vh", 
-      width: "100vw",
-      position: "fixed",
-      top: 0,
-      left: 0
-    }}>
+    <Center
+      style={{
+        height: "60vh",
+        width: "100%",
+      }}
+    >
       <Loader color="blue" size="xl" type="dots" />
     </Center>
   );

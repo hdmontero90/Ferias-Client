@@ -1,42 +1,48 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-//@ts-ignore
-const BASE_URL = REACT_APP_URL_APIGATEWAY; // Reemplaza esto con la URL de tu API
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+// URL base de la API. En dev, el proxy de Vite (/api -> localhost:5000) permite
+// usar la raíz del sitio; en producción se puede definir VITE_URL_APIGATEWAY.
+const URL_BASE_API = import.meta.env.VITE_URL_APIGATEWAY || "";
+
+/**
+ * API genérica del sitio público. El client no envía token: sólo consume
+ * los endpoints públicos del server (/api/publico/* y comentarios).
+ */
 export const api = createApi({
-  reducerPath: 'api',
-  baseQuery: fetchBaseQuery({
-    baseUrl: BASE_URL,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-  }),
+  reducerPath: "api",
+  baseQuery: fetchBaseQuery({ baseUrl: URL_BASE_API }),
+  tagTypes: ["Api"],
   endpoints: (builder) => ({
     get: builder.query<unknown, string>({
-      query: (path) => path,
+      query: (ruta) => ruta,
+      providesTags: ["Api"],
     }),
-    post: builder.mutation<unknown, { path: string; datos: any }>({
-      query: ({ path, datos }: { path: string; datos?: object | [] }) => ({
-        url: path,
-        method: 'POST',
-        body: JSON.stringify(datos),
-      }),
+    getSinCache: builder.query<unknown, string>({
+      query: (ruta) => ruta,
+      keepUnusedDataFor: 0,
+      providesTags: ["Api"],
     }),
-    put: builder.mutation<unknown, { path: string; id: string; datos: any }>({
-      query: ({ path, id, datos }: { path: string; id: string; datos?: object | [] }) => ({
-        url: id ? `${path}/${id}` : `${path}`,
-        method: 'PUT',
-        body: JSON.stringify(datos),
+    post: builder.mutation<unknown, { ruta: string; datos?: object }>({
+      query: ({ ruta, datos }: { ruta: string; datos?: object }) => ({
+        url: ruta,
+        method: "POST",
+        body: datos as object,
       }),
+      invalidatesTags: ["Api"],
     }),
-    delete: builder.mutation<unknown, { path: string; id?: string | null; datos?: any }>({
-      query: ({ path, id, datos }) => ({
-        url: id ? `${path}/${id}` : `${path}`,
-        method: 'DELETE',
-        body: JSON.stringify(datos),
+    delete: builder.mutation<unknown, { ruta: string; id?: string | null }>({
+      query: ({ ruta, id }) => ({
+        url: id ? `${ruta}/${id}` : `${ruta}`,
+        method: "DELETE",
       }),
+      invalidatesTags: ["Api"],
     }),
   }),
 });
 
-export const { useGetQuery, usePostMutation, usePutMutation, useDeleteMutation }: any = api;
+export const {
+  useGetQuery,
+  useGetSinCacheQuery,
+  usePostMutation,
+  useDeleteMutation,
+} = api;
