@@ -12,6 +12,7 @@ import { useGetQuery } from "../../Api/apiRTK";
 import { useDisclosure } from "@mantine/hooks";
 import { useAppDispatch, useAppSelector } from "../../hooks/hooks";
 import { establecerEdicion } from "../../Api/edicionSlice";
+import { PublicFooter, type DatosPie } from "./PublicFooter";
 import type { Edicion } from "../../interface/datos";
 
 /** Estructura general del sitio público: cabecera con selector de edición,
@@ -43,49 +44,16 @@ export function Layout() {
   const edicionEfectiva = edicion || edicionId;
 
   // NOW: obtener configuración del sitio público para esta edición
-  const configNavResult: { nav_brand_image?: string; nav_links?: Array<{ titulo: string; url: string }> } =
-    useGetQuery("/api/publico/configuracion-sitio-publico/" + edicionEfectiva + "/nav")?.data ?? {};
-  const configFooterResult: { footer_logo_image?: string; footer_links?: Array<{ nombre: string; url: string; imagen?: string }> } =
-    useGetQuery("/api/publico/configuracion-sitio-publico/" + edicionEfectiva + "/footer")?.data ?? {};
-
-  // Colores del pie configurados desde el backoffice (footer_color_fondo/footer_color_texto).
   // La respuesta de la API es { datos: {...}, edicion }: dos niveles de unwrap.
-  const configFooterDatos = useGetQuery(
-    "/api/publico/configuracion-sitio-publico/" + edicionEfectiva + "/footer"
-  )?.data as { datos?: { footer_color_fondo?: string | null; footer_color_texto?: string | null } } | undefined;
-  const footerColorFondo: string | null = configFooterDatos?.datos?.footer_color_fondo ?? null;
-  const footerColorTexto: string | null = configFooterDatos?.datos?.footer_color_texto ?? null;
+  const configNavDatos = useGetQuery("/api/publico/configuracion-sitio-publico/" + edicionEfectiva + "/nav")
+    ?.data as { datos?: { nav_imagen_marca?: string | null; nav_enlaces?: Array<{ titulo: string; url: string }> } } | undefined;
+  const configFooterDatos = useGetQuery("/api/publico/configuracion-sitio-publico/" + edicionEfectiva + "/footer")
+    ?.data as { datos?: DatosPie } | undefined;
 
   // NOW: memoizar los datos de configuración
   const navLinksOptions = useMemo(() => {
-    return configNavResult.nav_links ?? [];
-  }, [configNavResult]);
-
-  const footerLinksOptions = useMemo(() => {
-    return configFooterResult.footer_links ?? [];
-  }, [configFooterResult]);
-
-  // Estilo del footer: si hay color de fondo configurado se aplica. El color de texto
-  // es el elegido si existe; si no, contraste automatico segun la luminancia del fondo.
-  // Sin color de fondo se usa el estilo actual.
-  const estiloFooter: React.CSSProperties = (() => {
-    const fondo = footerColorFondo?.trim() ?? "";
-    const m = fondo !== "" ? /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.exec(fondo) : null;
-    if (!m) return { textAlign: "center", padding: "1.5rem", color: "#868e96" } as React.CSSProperties;
-    const r = parseInt(m[0].slice(1, 3), 16);
-    const g = parseInt(m[0].slice(3, 5), 16);
-    const b = parseInt(m[0].slice(5, 7), 16);
-    const contrasteTextos = (0.299 * r + 0.587 * g + 0.114 * b) / 255 >= 0.6 ? "#1a1b26" : "#ffffff";
-    const textoElegido = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test((footerColorTexto ?? "").trim())
-      ? (footerColorTexto as string).trim()
-      : null;
-    return {
-      textAlign: "center",
-      padding: "1.5rem",
-      backgroundColor: fondo,
-      color: textoElegido ?? contrasteTextos,
-    } as React.CSSProperties;
-  })();
+    return configNavDatos?.datos?.nav_enlaces ?? [];
+  }, [configNavDatos]);
 
   const navLinks = useMemo(() => {
     if (navLinksOptions && navLinksOptions.length > 0) {
@@ -98,19 +66,6 @@ export function Layout() {
       { titulo: "Planos", url: "/plan" },
     ];
   }, [navLinksOptions]);
-
-  const footerLinks = useMemo(() => {
-    if (footerLinksOptions && footerLinksOptions.length > 0) {
-      return footerLinksOptions;
-    }
-    // Defaults: Facebook, X, Instagram, YouTube
-    return [
-      { nombre: "Facebook", url: "https://www.facebook.com/MinisteriodeCapitalHumano", imagen: "/static/media/2025_Footer_1_Face.c1647929406c2ae53064fa660dd44460.svg" },
-      { nombre: "X", url: "https://x.com/MinCapHum_Ar", imagen: "/static/media/2025_Footer_1_X.5f6e0f60a5f0a55b354f833a06dd2a08.svg" },
-      { nombre: "Instagram", url: "https://www.instagram.com/mincapitalhumano/", imagen: "/static/media/2025_Footer_1_Instagram.b5d661bfa18be113ddaef14cc70574e1.svg" },
-      { nombre: "YouTube", url: "https://www.youtube.com/@MinCapHum_Ar", imagen: "/static/media/2025_Footer_1_Youtube.e9e268d21ee9311e4b9b4cea18cf19e2.svg" },
-    ];
-  }, [footerLinksOptions]);
 
   // NOW: render navbar links from config instead of hardcoded array
   const renderNavLinks = useMemo(() => {
@@ -183,41 +138,7 @@ export function Layout() {
           <Outlet />
         </AppShell.Main>
 
-        <footer style={estiloFooter}>
-          <div>
-            {configFooterResult.footer_logo_image ? (
-              <img
-                src={configFooterResult.footer_logo_image}
-                alt="Footer logo"
-                style={{ maxWidth: 200, height: "auto", display: "block", margin: "0 auto" }}
-              />
-            ) : (
-              <Text size="sm" style={{ textAlign: "center", marginBottom: 8, color: "inherit" }}>
-                Ferias Nacionales de Educación, Artes, Ciencias y Tecnología
-              </Text>
-            )}
-
-            <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 12 }}>
-              {footerLinks.map((link) => {
-                return (
-                  <a
-                    key={link.url}
-                    href={link.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center" }}
-                  >
-                    <img
-                      src={link.imagen || "/static/media/2025_Footer_1_Face.c1647929406c2ae53064fa660dd44460.svg"}
-                      alt={link.nombre}
-                      style={{ width: "100%", height: "100%" }}
-                    />
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-        </footer>
+        <PublicFooter datos={configFooterDatos?.datos ?? null} />
       </AppShell>
     </>
   );
