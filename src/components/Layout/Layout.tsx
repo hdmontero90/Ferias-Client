@@ -48,6 +48,13 @@ export function Layout() {
   const configFooterResult: { footer_logo_image?: string; footer_links?: Array<{ nombre: string; url: string; imagen?: string }> } =
     useGetQuery("/api/publico/configuracion-sitio-publico/" + edicionEfectiva + "/footer")?.data ?? {};
 
+  // Color de fondo del pie configurado desde el backoffice (footer_color_fondo).
+  // La respuesta de la API es { datos: {...}, edicion }: dos niveles de unwrap.
+  const footerColorFondo: string | null =
+    (useGetQuery("/api/publico/configuracion-sitio-publico/" + edicionEfectiva + "/footer")
+      ?.data as { datos?: { footer_color_fondo?: string | null } } | undefined)
+      ?.datos?.footer_color_fondo ?? null;
+
   // NOW: memoizar los datos de configuración
   const navLinksOptions = useMemo(() => {
     return configNavResult.nav_links ?? [];
@@ -57,7 +64,24 @@ export function Layout() {
     return configFooterResult.footer_links ?? [];
   }, [configFooterResult]);
 
-  // NOW: memoizar los enlaces de navbar y footer a partir de la config o defaults
+  // Estilo del footer: si hay color de fondo configurado se aplica, junto con un
+  // color de texto con contraste segun su luminancia. Sin color se usa el estilo actual.
+  const estiloFooter: React.CSSProperties = (() => {
+    const color = footerColorFondo?.trim() ?? "";
+    const m = color !== "" ? /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.exec(color) : null;
+    if (!m) return { textAlign: "center", padding: "1.5rem", color: "#868e96" } as React.CSSProperties;
+    const r = parseInt(m[0].slice(1, 3), 16);
+    const g = parseInt(m[0].slice(3, 5), 16);
+    const b = parseInt(m[0].slice(5, 7), 16);
+    const clara = (0.299 * r + 0.587 * g + 0.114 * b) / 255 >= 0.6;
+    return {
+      textAlign: "center",
+      padding: "1.5rem",
+      backgroundColor: color,
+      color: clara ? "#1a1b26" : "#ffffff",
+    } as React.CSSProperties;
+  })();
+
   const navLinks = useMemo(() => {
     if (navLinksOptions && navLinksOptions.length > 0) {
       return navLinksOptions;
@@ -154,7 +178,7 @@ export function Layout() {
           <Outlet />
         </AppShell.Main>
 
-        <footer style={{ textAlign: "center", padding: "1.5rem", color: "#868e96" }}>
+        <footer style={estiloFooter}>
           <div>
             {configFooterResult.footer_logo_image ? (
               <img
@@ -163,7 +187,7 @@ export function Layout() {
                 style={{ maxWidth: 200, height: "auto", display: "block", margin: "0 auto" }}
               />
             ) : (
-              <Text size="sm" style={{ textAlign: "center", marginBottom: 8 }}>
+              <Text size="sm" style={{ textAlign: "center", marginBottom: 8, color: "inherit" }}>
                 Ferias Nacionales de Educación, Artes, Ciencias y Tecnología
               </Text>
             )}
