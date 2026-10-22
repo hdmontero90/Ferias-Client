@@ -81,14 +81,22 @@ const REDES_POR_DEFECTO = [
   { nombre: "YouTube", url: "https://www.youtube.com/@MinCapHum_Ar", imagen: "/static/media/2025_Footer_1_Youtube.e9e268d21ee9311e4b9b4cea18cf19e2.svg" },
 ];
 
+// Misma resolución de raíz que usa el cliente de API (VITE_URL_APIGATEWAY).
+const API_BASE = import.meta.env.VITE_URL_APIGATEWAY || "";
+
+/** Resuelve la URL de una imagen: absoluta o recurso propio tal cual; ruta subida
+ * al backend (/uploads) prefijada con la base de la API; lo demás no es una imagen. */
+function resolverUrlImagen(valor: string | undefined | null): string | null {
+  if (!valor) return null;
+  if (valor.startsWith("http") || valor.startsWith("blob:")) return valor;
+  // /static/media son recursos incluidos en el propio client.
+  if (valor.startsWith("/static/")) return valor;
+  if (valor.startsWith("/uploads")) return API_BASE + valor;
+  return null;
+}
+
 function esUrlImagen(valor: string | undefined | null): boolean {
-  return (
-    !!valor &&
-    (valor.startsWith("http") ||
-      valor.startsWith("/static/media") ||
-      valor.startsWith("/uploads") ||
-      valor.startsWith("blob:"))
-  );
+  return resolverUrlImagen(valor) !== null;
 }
 
 function ItemPieVista({
@@ -102,12 +110,13 @@ function ItemPieVista({
 }) {
   if (item.tipo === "logo") {
     const logo = logos.find((l) => l.id === item.ref_id);
-    if (!logo?.imagen) return null;
+    const urlLogo = resolverUrlImagen(logo?.imagen);
+    if (!urlLogo) return null;
     return (
       <img
-        src={logo.imagen}
-        alt={logo.descripcion || "Logo"}
-        title={logo.descripcion || undefined}
+        src={urlLogo}
+        alt={logo?.descripcion || "Logo"}
+        title={logo?.descripcion || undefined}
         style={{ maxHeight: 40, maxWidth: 120, objectFit: "contain", display: "block" }}
       />
     );
@@ -119,7 +128,7 @@ function ItemPieVista({
       return (
         <a href={red.url} target="_blank" rel="noreferrer" title={red.nombre}>
           <img
-            src={red.imagen as string}
+            src={resolverUrlImagen(red.imagen) as string}
             alt={red.nombre}
             style={{ width: 24, height: 24, objectFit: "contain", display: "block" }}
           />
@@ -280,9 +289,9 @@ function PieClasico({
   return (
     <footer style={{ textAlign: "center", padding: "1.5rem", color: "#868e96" }}>
       <div>
-        {datos.footer_imagen_logo ? (
+        {esUrlImagen(datos.footer_imagen_logo) ? (
           <img
-            src={datos.footer_imagen_logo}
+            src={resolverUrlImagen(datos.footer_imagen_logo) as string}
             alt="Logo del pie"
             style={{ maxWidth: 200, height: "auto", display: "block", margin: "0 auto" }}
           />

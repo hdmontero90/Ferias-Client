@@ -17,6 +17,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Los archivos subidos (logos, etc.) los sirve el backend en /uploads.
+      '/uploads': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   optimizeDeps: {
