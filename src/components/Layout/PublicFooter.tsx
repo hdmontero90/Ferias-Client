@@ -112,7 +112,7 @@ function ItemPieVista({
     const logo = logos.find((l) => l.id === item.ref_id);
     const urlLogo = resolverUrlImagen(logo?.imagen);
     if (!urlLogo) return null;
-    return (
+    const imagen = (
       <img
         src={urlLogo}
         alt={logo?.descripcion || "Logo"}
@@ -120,6 +120,14 @@ function ItemPieVista({
         style={{ maxHeight: 40, maxWidth: 120, objectFit: "contain", display: "block" }}
       />
     );
+    if (logo?.url) {
+      return (
+        <a href={logo.url} target="_blank" rel="noreferrer" title={logo.descripcion || undefined}>
+          {imagen}
+        </a>
+      );
+    }
+    return imagen;
   }
   if (item.tipo === "red") {
     const red = enlaces.find((r) => r.id === item.ref_id);
