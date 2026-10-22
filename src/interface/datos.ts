@@ -126,3 +126,12 @@ export interface Jurisdiccion {
   codigo: string;
   nombre: string;
 }
+
+export interface ConfiguracionSitioPublico {
+  nav_imagen_marca: string;
+  nav_enlaces: unknown[];
+  footer_imagen_logo: string;
+  footer_enlaces: unknown[];
+  created_at: string;
+  updated_at: string;
+}
