@@ -48,12 +48,13 @@ export function Layout() {
   const configFooterResult: { footer_logo_image?: string; footer_links?: Array<{ nombre: string; url: string; imagen?: string }> } =
     useGetQuery("/api/publico/configuracion-sitio-publico/" + edicionEfectiva + "/footer")?.data ?? {};
 
-  // Color de fondo del pie configurado desde el backoffice (footer_color_fondo).
+  // Colores del pie configurados desde el backoffice (footer_color_fondo/footer_color_texto).
   // La respuesta de la API es { datos: {...}, edicion }: dos niveles de unwrap.
-  const footerColorFondo: string | null =
-    (useGetQuery("/api/publico/configuracion-sitio-publico/" + edicionEfectiva + "/footer")
-      ?.data as { datos?: { footer_color_fondo?: string | null } } | undefined)
-      ?.datos?.footer_color_fondo ?? null;
+  const configFooterDatos = useGetQuery(
+    "/api/publico/configuracion-sitio-publico/" + edicionEfectiva + "/footer"
+  )?.data as { datos?: { footer_color_fondo?: string | null; footer_color_texto?: string | null } } | undefined;
+  const footerColorFondo: string | null = configFooterDatos?.datos?.footer_color_fondo ?? null;
+  const footerColorTexto: string | null = configFooterDatos?.datos?.footer_color_texto ?? null;
 
   // NOW: memoizar los datos de configuración
   const navLinksOptions = useMemo(() => {
@@ -64,21 +65,25 @@ export function Layout() {
     return configFooterResult.footer_links ?? [];
   }, [configFooterResult]);
 
-  // Estilo del footer: si hay color de fondo configurado se aplica, junto con un
-  // color de texto con contraste segun su luminancia. Sin color se usa el estilo actual.
+  // Estilo del footer: si hay color de fondo configurado se aplica. El color de texto
+  // es el elegido si existe; si no, contraste automatico segun la luminancia del fondo.
+  // Sin color de fondo se usa el estilo actual.
   const estiloFooter: React.CSSProperties = (() => {
-    const color = footerColorFondo?.trim() ?? "";
-    const m = color !== "" ? /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.exec(color) : null;
+    const fondo = footerColorFondo?.trim() ?? "";
+    const m = fondo !== "" ? /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.exec(fondo) : null;
     if (!m) return { textAlign: "center", padding: "1.5rem", color: "#868e96" } as React.CSSProperties;
     const r = parseInt(m[0].slice(1, 3), 16);
     const g = parseInt(m[0].slice(3, 5), 16);
     const b = parseInt(m[0].slice(5, 7), 16);
-    const clara = (0.299 * r + 0.587 * g + 0.114 * b) / 255 >= 0.6;
+    const contrasteTextos = (0.299 * r + 0.587 * g + 0.114 * b) / 255 >= 0.6 ? "#1a1b26" : "#ffffff";
+    const textoElegido = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test((footerColorTexto ?? "").trim())
+      ? (footerColorTexto as string).trim()
+      : null;
     return {
       textAlign: "center",
       padding: "1.5rem",
-      backgroundColor: color,
-      color: clara ? "#1a1b26" : "#ffffff",
+      backgroundColor: fondo,
+      color: textoElegido ?? contrasteTextos,
     } as React.CSSProperties;
   })();
 
