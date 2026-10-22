@@ -73,13 +73,23 @@ const COLORES_RED: Record<string, string> = {
   youtube: "#ff0000",
 };
 
-/** Redes por defecto del pie clásico mientras no haya enlaces configurados. */
+/** Redes de marca incluidas en el client (public/media): se resuelven igual en
+ * dev y producción, sin depender de rutas con hash del template original. */
 const REDES_POR_DEFECTO = [
-  { nombre: "Facebook", url: "https://www.facebook.com/MinisteriodeCapitalHumano", imagen: "/static/media/2025_Footer_1_Face.c1647929406c2ae53064fa660dd44460.svg" },
-  { nombre: "X", url: "https://x.com/MinCapHum_Ar", imagen: "/static/media/2025_Footer_1_X.5f6e0f60a5f0a55b354f833a06dd2a08.svg" },
-  { nombre: "Instagram", url: "https://www.instagram.com/mincapitalhumano/", imagen: "/static/media/2025_Footer_1_Instagram.b5d661bfa18be113ddaef14cc70574e1.svg" },
-  { nombre: "YouTube", url: "https://www.youtube.com/@MinCapHum_Ar", imagen: "/static/media/2025_Footer_1_Youtube.e9e268d21ee9311e4b9b4cea18cf19e2.svg" },
+  { nombre: "Facebook", url: "https://www.facebook.com/MinisteriodeCapitalHumano", imagen: "/media/facebook.svg" },
+  { nombre: "X", url: "https://x.com/MinCapHum_Ar", imagen: "/media/x.svg" },
+  { nombre: "Instagram", url: "https://www.instagram.com/mincapitalhumano/", imagen: "/media/instagram.svg" },
+  { nombre: "YouTube", url: "https://www.youtube.com/@MinCapHum_Ar", imagen: "/media/youtube.svg" },
 ];
+
+/** Los enlaces guardados referencian la red por nombre de proveedor
+ * ("facebook", "x", ...): se resuelven a los SVG de marca incluidos en el client. */
+const IMAGENES_RED_POR_PROVEEDOR: Record<string, string> = {
+  facebook: "/media/facebook.svg",
+  x: "/media/x.svg",
+  instagram: "/media/instagram.svg",
+  youtube: "/media/youtube.svg",
+};
 
 // Misma resolución de raíz que usa el cliente de API (VITE_URL_APIGATEWAY).
 const API_BASE = import.meta.env.VITE_URL_APIGATEWAY || "";
@@ -112,12 +122,14 @@ function ItemPieVista({
     const logo = logos.find((l) => l.id === item.ref_id);
     const urlLogo = resolverUrlImagen(logo?.imagen);
     if (!urlLogo) return null;
+    // Tamaño explícito: algunos SVG subidos no traen dimensiones intrínsecas
+    // (solo viewBox incompleto) y sin tamaño el navegador los pintaría en 0x0.
     const imagen = (
       <img
         src={urlLogo}
         alt={logo?.descripcion || "Logo"}
         title={logo?.descripcion || undefined}
-        style={{ maxHeight: 40, maxWidth: 120, objectFit: "contain", display: "block" }}
+        style={{ height: 40, width: 120, objectFit: "contain", display: "block" }}
       />
     );
     if (logo?.url) {
@@ -132,11 +144,12 @@ function ItemPieVista({
   if (item.tipo === "red") {
     const red = enlaces.find((r) => r.id === item.ref_id);
     if (!red) return null;
-    if (esUrlImagen(red.imagen)) {
+    const fuenteRed = resolverUrlImagen(red.imagen) ?? IMAGENES_RED_POR_PROVEEDOR[(red.imagen || "").toLowerCase()] ?? IMAGENES_RED_POR_PROVEEDOR[(red.nombre || "").toLowerCase()];
+    if (fuenteRed) {
       return (
         <a href={red.url} target="_blank" rel="noreferrer" title={red.nombre}>
           <img
-            src={resolverUrlImagen(red.imagen) as string}
+            src={fuenteRed}
             alt={red.nombre}
             style={{ width: 24, height: 24, objectFit: "contain", display: "block" }}
           />
